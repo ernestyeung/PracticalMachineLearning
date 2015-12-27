@@ -1,0 +1,31 @@
+#Practial Machine Learning Project
+
+##Introduction
+Using the data from accelerometers on the belt, forearm, arm and dumbell of 6 participants, in addition to the classification of activity quality, develop a model which can be used to predict activity quality given only the accelerometer data.  For more information and the data source, see here: http://groupware.les.inf.puc-rio.br/har .
+
+##How the Model was Built
+Libraries are loaded:
+```
+library(knitr)
+library(AppliedPredictiveModeling)
+library(caret)
+#library(rpart.plot)
+library(randomForest)
+```
+
+Data is read in:
+```
+TrainingData <- read.csv("pml-training.csv")
+TestingData <- read.csv("pml-testing.csv")
+
+dim(TrainingData)
+dim(TestingData)
+```
+
+Cross Validation
+
+Expected Out of Sample Error
+
+
+Predict Additional Test Cases
+

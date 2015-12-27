@@ -1,0 +1,101 @@
+---
+title: "Practial Machine Learning Project"
+date: "Sunday, 27 Dec, 2015"
+---
+
+##Introduction
+Using the data from accelerometers on the belt, forearm, arm and dumbell of 6 participants, in addition to the classification of activity quality, develop a model which can be used to predict activity quality given only the accelerometer data.  For more information and the data source, see here: http://groupware.les.inf.puc-rio.br/har .
+
+##How the Model was Built - Data Preparation
+Libraries are loaded:
+```{r}
+library(knitr)
+library(AppliedPredictiveModeling)
+library(caret)
+library(randomForest)
+```
+
+Data is read in:
+```{r}
+TrainingData <- read.csv("pml-training.csv")
+TestingData <- read.csv("pml-testing.csv")
+dim(TrainingData)
+dim(TestingData)
+```
+
+To reduce the size of the dataset and optimize for computational speed, remove fields of near zero variance.  Note the removal of such values for the testing data set is based on the training data set:
+```{r}
+NearZeroVariance <- nearZeroVar(TrainingData)
+TrainingData <- TrainingData[, -NearZeroVariance]
+TestingData <- TestingData[, -NearZeroVariance]
+```
+
+Remove fields that consist of NAs, and also fields that are not predictors (first 6 colums):
+```{r}
+TrainingNumNA = sapply(1:dim(TrainingData)[2],function(x)sum(is.na(TrainingData[,x])))
+TrainingListNA = which(TrainingNumNA>0)
+TrainingData = TrainingData[,-TrainingListNA]
+
+TrainingData = TrainingData[,-c(1:6)]
+
+dim(TrainingData)
+```
+
+Repeat the same operation for the testing data set:
+```{r}
+TestingNumNA = sapply(1:dim(TestingData)[2],function(x)sum(is.na(TestingData[,x])))
+TestingListNA = which(TestingNumNA>0)
+TestingData = TestingData[,-TestingListNA]
+
+TestingData = TestingData[,-c(1:6)]
+
+dim(TestingData)
+```
+
+##Preparation for Cross Validation
+Set a seed to ensure repeatable results, then partition 75% of the data into a training set (and thus 25% into a validation set):
+```{r}
+set.seed(911)
+TrainingSet <- createDataPartition(y=TrainingData$classe, p=0.75, list=F)
+TrainingDataSubset <- TrainingData[TrainingSet,]
+ValidationDataSubset <- TrainingData[-TrainingSet,]
+```
+
+##Preparation for Model Fitting
+Some housekeeping to ensure there's sufficient memory (my computer is low-end):
+```{r}
+remove(TrainingNumNA)
+remove(TestingNumNA)
+remove(TrainingListNA)
+remove(TestingListNA)
+remove(TrainingData)
+remove(TrainingSet)
+remove(NearZeroVariance)
+```
+
+##Model Fitting
+Model is fitted using a random forest model:
+```{r}
+FitControl <- trainControl(method="cv", number=3, verboseIter=F)
+ModelFit <- train(classe ~ ., data=TrainingDataSubset, method="rf", trControl=FitControl)
+```
+
+##Cross Validation
+The validation set is used to validate the accuracy of the model:
+```{r}
+ValidationOutput <- predict(ModelFit, ValidationDataSubset)
+ValidationConfusionMatrix <- confusionMatrix(ValidationDataSubset$classe, ValidationOutput)
+```
+
+##Expected Out of Sample Error
+As shown on the confusion matrix, the accuracy exceeds 99.4% (thus the out-of-sample error is expected to be less than 0.6%):
+```{r}
+ValidationConfusionMatrix 
+```
+
+##Predict Additional Test Cases
+The model is then used to predict the 20 test cases:
+```{r}
+TestingDataOutput <- predict(ModelFit, TestingData)
+TestingDataOutput
+```
